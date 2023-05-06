@@ -6,6 +6,8 @@ import 'package:mentimeter_admin/screens/view_questions_list.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+import 'leader_board_screen.dart';
+
 class Question {
   final String id;
   final int answer;
@@ -31,6 +33,8 @@ class Question {
   }
 }
 
+final databaseReference = FirebaseDatabase.instance.ref();
+
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -43,6 +47,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   bool disableStartButton = false;
   bool disableNextButton = false;
+  bool disableScoreButton = false;
   late String _selectedCode;
   List<String> _codes = [];
   late String firebaseUrl;
@@ -56,36 +61,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         'https://mentimeterclone-default-rtdb.firebaseio.com/questions/$_selectedCode.json';
   }
 
-  /*void _startQuiz() async {
-    // Update the _firebaseUrl variable using the current value of _selectedCode
-    String firebaseUrl =
-        'https://mentimeterclone-default-rtdb.firebaseio.com/questions/$_selectedCode.json';
-    final response = await http.get(Uri.parse(firebaseUrl));
-
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-      if (data.isNotEmpty) {
-        final String questionId = data.keys.first;
-        final Map<String, dynamic> questionMap = data[questionId];
-        questionMap['status'] = true;
-
-        final updateResponse = await http.put(
-            Uri.parse(
-                'https://mentimeterclone-default-rtdb.firebaseio.com/questions/$_selectedCode/$questionId.json'),
-            body: json.encode(questionMap));
-
-        if (updateResponse.statusCode == 200) {
-          setState(() {
-            disableStartButton = true;
-          });
-        } else {
-          print('Failed to update question status.');
-        }
-      }
-    } else {
-      print('Failed to fetch questions: ${response.statusCode}');
-    }
-  }*/
   void _startQuiz() async {
     // Update the _firebaseUrl variable using the current value of _selectedCode
     String firebaseUrl = 'https://mentimeterclone-default-rtdb.firebaseio.com/';
@@ -124,17 +99,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (quizResponse.statusCode == 200) {
       final Map<String, dynamic> quizData = json.decode(quizResponse.body);
 
-      if (quizData != null) {
-        quizData['active'] = true;
+      quizData['active'] = true;
 
-        final updateQuizResponse = await http.patch(
-            Uri.parse('$firebaseUrl/questions.json'),
-            body: json.encode({"active": true}));
+      final updateQuizResponse = await http.patch(
+          Uri.parse('$firebaseUrl/questions.json'),
+          body: json.encode({"active": true}));
 
-        if (updateQuizResponse.statusCode != 200) {
-          print('Failed to update quiz active status.');
-          return;
-        }
+      if (updateQuizResponse.statusCode != 200) {
+        print('Failed to update quiz active status.');
+        return;
       }
     } else {
       print('Failed to fetch quiz: ${quizResponse.statusCode}');
@@ -187,87 +160,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  /*void _nextQuestion() async {
-    final response = await http.get(Uri.parse(
-        'https://mentimeterclone-default-rtdb.firebaseio.com/questions/$_selectedCode.json'));
-
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> data = json.decode(response.body);
-      if (data.isNotEmpty && _currentQuestionNumber < data.length) {
-        final String currentQuestionId =
-            data.keys.elementAt(_currentQuestionNumber - 1);
-        final Map<String, dynamic> currentQuestionMap = data[currentQuestionId];
-        currentQuestionMap['status'] = false;
-
-        final String nextQuestionId =
-            data.keys.elementAt(_currentQuestionNumber);
-        final Map<String, dynamic> nextQuestionMap = data[nextQuestionId];
-        nextQuestionMap['status'] = true;
-
-        final currentQuestionResponse = await http.patch(
-            Uri.parse(
-                'https://mentimeterclone-default-rtdb.firebaseio.com/questions/$_selectedCode/$currentQuestionId.json'),
-            body: json.encode({'status': false}));
-
-        final nextQuestionResponse = await http.patch(
-            Uri.parse(
-                'https://mentimeterclone-default-rtdb.firebaseio.com/questions/$_selectedCode/$nextQuestionId.json'),
-            body: json.encode({'status': true}));
-
-        if (currentQuestionResponse.statusCode == 200 &&
-            nextQuestionResponse.statusCode == 200) {
-          setState(() {
-            _currentQuestionNumber++;
-          });
-          if (_currentQuestionNumber == data.length) {
-            // If all questions are done
-            setState(() {
-              disableNextButton = true; // Disable the button
-            });
-          }
-        } else {
-          print('Failed to update question statuses.');
-        }
-      }
-    }
-  }*/
-
-  /*void endQuiz() async {
-    final response = await http.get(Uri.parse(
-        'https://mentimeterclone-default-rtdb.firebaseio.com/questions/$_selectedCode.json'));
-
-    final responseData = json.decode(response.body);
-
-    responseData.forEach((key, value) async {
-      final questionResponse = await http.patch(
-        Uri.parse(
-            'https://mentimeterclone-default-rtdb.firebaseio.com/questions/$_selectedCode.json'),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode(<String, dynamic>{
-          key: {
-            ...value,
-            'status': false,
-          }
-        }),
-      );
-      print(questionResponse.statusCode);
-    });
+  void _showscore() async {
+    databaseReference.child("questions/").update({'showScore': true});
     setState(() {
-      disableStartButton = false;
-      disableNextButton = false;
+      disableScoreButton = true;
     });
-  }*/
+    Get.to(() => const LeaderBoardScreen());
+  }
+
   void endQuiz() async {
     const firebaseUrl = 'https://mentimeterclone-default-rtdb.firebaseio.com/';
 
-    // First update the status of all questions
-    final response =
-        await http.get(Uri.parse('$firebaseUrl/questions/$_selectedCode.json'));
-    final responseData = json.decode(response.body);
+    // Delete all users
+    final usersResponse =
+        await http.delete(Uri.parse('$firebaseUrl/users.json'));
 
-    responseData.forEach((key, value) async {
+    if (usersResponse.statusCode != 200) {
+      print('Failed to delete users.');
+      return;
+    }
+
+    // Update the status of all questions
+    final questionsResponse =
+        await http.get(Uri.parse('$firebaseUrl/questions/$_selectedCode.json'));
+    final questionsData = json.decode(questionsResponse.body);
+
+    questionsData.forEach((key, value) async {
       final questionResponse = await http.patch(
         Uri.parse('$firebaseUrl/questions/$_selectedCode.json'),
         headers: <String, String>{
@@ -282,8 +200,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
       print(questionResponse.statusCode);
     });
-
-    // Then update the active attribute of the quiz
+    databaseReference.child("questions/").update({'showScore': false});
+    // Update the active attribute of the quiz
     final quizResponse = await http.patch(
       Uri.parse('$firebaseUrl/questions.json'),
       headers: <String, String>{
@@ -298,10 +216,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       print('Failed to update quiz active status.');
       return;
     }
-
     setState(() {
       disableStartButton = false;
       disableNextButton = false;
+      disableScoreButton = false;
     });
   }
 
@@ -415,9 +333,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(height: 100.0),
                 ElevatedButton(
-                  onPressed: () {
-                    // TODO: Implement functionality for this button
-                  },
+                  onPressed: disableScoreButton ? null : _showscore,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.purple, // Set the background color
                   ),

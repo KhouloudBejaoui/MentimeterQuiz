@@ -1,18 +1,25 @@
 import 'dart:async';
 
 import 'package:firebase_database/firebase_database.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mentimeter_clone/models/les_questions.dart';
 import 'package:mentimeter_clone/screens/score/score_screen.dart';
 
 import '../models/db_connect.dart';
-// We use get package for our state management
+import '../screens/welcome/quiz_manager.dart';
 
 class QuestionController extends GetxController
     with GetSingleTickerProviderStateMixin {
-  // Lets animated our progress bar
+  late final String quizCode;
+  late final String username;
 
+  QuestionController() {
+    quizCode = QuizManager.getQuizCode();
+    username = QuizManager.getUserName();
+  }
+
+  // Lets animated our progress bar
   late AnimationController _animationController;
   late Animation _animation;
   // so that we can access our animation outside
@@ -92,14 +99,14 @@ class QuestionController extends GetxController
     });
   }
 
-  Future<void> nextQuestion() async {
+  /*Future<void> nextQuestion() async {
     final questions = await _questions;
     final currentQuestionIndex = _questionNumber.value - 1;
     final currentQuestionId = questions[currentQuestionIndex].id;
     final currentQuestionRef = FirebaseDatabase.instance
         .ref()
         .child('questions')
-        .child('123')
+        .child(quizCode)
         .child(currentQuestionId)
         .child('status');
 
@@ -109,7 +116,7 @@ class QuestionController extends GetxController
       final nextQuestionRef = FirebaseDatabase.instance
           .ref()
           .child('questions')
-          .child('123')
+          .child(quizCode)
           .child(nextQuestionId)
           .child('status');
 
@@ -134,7 +141,67 @@ class QuestionController extends GetxController
         }
       });
     } else {
-      Get.to(const ScoreScreen());
+      // Show a circular progress indicator until the score screen is ready to be displayed
+      Get.to(StreamBuilder(
+        stream: FirebaseDatabase.instance
+            .ref()
+            .child('questions')
+            .child('showScore')
+            .onValue,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData ||
+              snapshot.data!.snapshot.value as bool != true) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return ScoreScreen(username);
+        },
+      ));
+    }
+  }*/
+
+  Future<void> nextQuestion() async {
+    final questions = await _questions;
+    final currentQuestionIndex = _questionNumber.value - 1;
+    final currentQuestionId = questions[currentQuestionIndex].id;
+    final currentQuestionRef = FirebaseDatabase.instance
+        .ref()
+        .child('questions')
+        .child(quizCode)
+        .child(currentQuestionId)
+        .child('status');
+
+    if (_questionNumber.value != questions.length) {
+      final nextQuestionIndex = currentQuestionIndex + 1;
+      final nextQuestionId = questions[nextQuestionIndex].id;
+      final nextQuestionRef = FirebaseDatabase.instance
+          .ref()
+          .child('questions')
+          .child(quizCode)
+          .child(nextQuestionId)
+          .child('status');
+
+      StreamSubscription? statusSubscription;
+      statusSubscription = currentQuestionRef.onValue.listen((event) {
+        final currentQuestionStatus = event.snapshot.value as bool;
+        if (currentQuestionStatus) {
+          statusSubscription?.cancel();
+          nextQuestionRef.onValue.listen((event) {
+            final nextQuestionStatus = event.snapshot.value as bool;
+            if (nextQuestionStatus) {
+              _questionNumber.value++;
+              _isAnswered = false;
+              _pageController.nextPage(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.ease,
+              );
+              _animationController.reset();
+              _animationController.forward().whenComplete(nextQuestion);
+            }
+          });
+        }
+      });
+    } else {
+      Get.to(ScoreScreen(username));
     }
   }
 

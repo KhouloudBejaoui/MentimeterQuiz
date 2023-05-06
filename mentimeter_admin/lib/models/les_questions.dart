@@ -11,4 +11,13 @@ class Question {
       required this.status,
       required this.answer,
       required this.options});
+
+  Map<String, dynamic> toJson() {
+    return {
+      'question': question,
+      'status': status,
+      'answer': answer,
+      'options': options,
+    };
+  }
 }

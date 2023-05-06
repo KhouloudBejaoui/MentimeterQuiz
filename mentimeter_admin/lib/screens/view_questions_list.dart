@@ -1,6 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
+import 'package:mentimeter_admin/screens/update_question_screen.dart';
+
+import '../models/les_questions.dart';
 
 class ViewQuestionsScreen extends StatefulWidget {
   const ViewQuestionsScreen({Key? key}) : super(key: key);
@@ -55,6 +59,21 @@ class _ViewQuestionsScreenState extends State<ViewQuestionsScreen> {
     }
   }
 
+  void _deleteQuestion(String questionId) async {
+    final response = await http.delete(Uri.parse(
+        'https://mentimeterclone-default-rtdb.firebaseio.com/questions/$_selectedCode/$questionId.json'));
+
+    if (response.statusCode != 200) {
+      print('Failed to delete question.');
+      return;
+    }
+
+    setState(() {
+      _questions =
+          _questions.where((question) => question.id != questionId).toList();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -90,10 +109,64 @@ class _ViewQuestionsScreenState extends State<ViewQuestionsScreen> {
           Expanded(
             child: ListView.builder(
               itemCount: _questions.length,
-              itemBuilder: (ctx, index) => ListTile(
-                title: Text(_questions[index].question),
-                subtitle: Text(
-                    'Answer: ${_questions[index].options[_questions[index].answer]}'),
+              itemBuilder: (ctx, index) => Card(
+                child: ListTile(
+                  title: Text(_questions[index].question),
+                  subtitle: Text(
+                      'Answer: ${_questions[index].options[_questions[index].answer]}'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          Get.to(() => UpdateQuestionScreen(
+                                _selectedCode,
+                                _questions[index],
+                              ));
+                        },
+                        icon: const Icon(
+                          Icons.edit,
+                          color: Colors
+                              .blue, // Change this color to the desired color
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () async {
+                          final question = _questions[index];
+                          final confirmDelete = await showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: const Text('Confirm Delete'),
+                                content: const Text(
+                                    'Are you sure you want to delete this question?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(true),
+                                    child: const Text('OK'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                          if (confirmDelete == true) {
+                            _deleteQuestion(question.id);
+                          }
+                        },
+                        icon: const Icon(
+                          Icons.delete,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -101,20 +174,4 @@ class _ViewQuestionsScreenState extends State<ViewQuestionsScreen> {
       ),
     );
   }
-}
-
-class Question {
-  final String id;
-  final int answer;
-  final String question;
-  final bool status;
-  final List<String> options;
-
-  Question({
-    required this.id,
-    required this.question,
-    required this.answer,
-    required this.status,
-    required this.options,
-  });
 }

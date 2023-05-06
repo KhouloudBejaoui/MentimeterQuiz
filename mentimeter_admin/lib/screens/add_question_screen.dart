@@ -3,11 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:get/get.dart';
 
+import 'dashboard_screen.dart';
+
 class AddQuestionScreen extends StatefulWidget {
   const AddQuestionScreen({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
   _AddQuestionScreenState createState() => _AddQuestionScreenState();
 }
 
@@ -55,11 +56,23 @@ class _AddQuestionScreenState extends State<AddQuestionScreen> {
         http.Response response = await http.post(Uri.parse(firebaseUrl),
             body: jsonEncode(question.toJson()));
         if (response.statusCode == 200) {
-          // ignore: use_build_context_synchronously
-          Navigator.pop(context);
+          showDialog(
+            context: context,
+            builder: (context) {
+              return AlertDialog(
+                title: const Text('Success'),
+                content: const Text('question added successfully!'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Get.to(const DashboardScreen()),
+                    child: const Text('OK'),
+                  ),
+                ],
+              );
+            },
+          );
         } else {
           // Handle error
-          // ignore: use_build_context_synchronously
           showDialog(
             context: context,
             builder: (context) {
@@ -182,7 +195,7 @@ class _AddQuestionScreenState extends State<AddQuestionScreen> {
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
                     _addQuestion();
-                    Get.to(const AddQuestionScreen());
+                    //Get.to(const AddQuestionScreen());
                   }
                 },
                 child: const Text('Add Question'),

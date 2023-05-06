@@ -28,9 +28,11 @@ class Body extends StatelessWidget {
             } else if (snapshot.hasData) {
               var extractedData = snapshot.data as List<Question>;
               return Stack(
-                fit: StackFit.expand,
                 children: [
-                  WebsafeSvg.asset("assets/icons/bg.svg", fit: BoxFit.fill),
+                  WebsafeSvg.asset("assets/icons/bg.svg",
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity),
                   SafeArea(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

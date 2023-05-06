@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mentimeter_clone/constants.dart';
+import 'package:mentimeter_clone/screens/welcome/quiz_manager.dart';
 import 'package:mentimeter_clone/screens/welcome/username_screen.dart';
 import 'package:websafe_svg/websafe_svg.dart';
 
 class CodeScreen extends StatelessWidget {
-  const CodeScreen({super.key});
+  const CodeScreen({Key? key}) : super(key: key);
+  static final quizCodeController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
-        fit: StackFit.expand,
         children: [
-          WebsafeSvg.asset("assets/icons/bg.svg", fit: BoxFit.fill),
+          WebsafeSvg.asset("assets/icons/bg.svg",
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: kDefaultPadding),
@@ -24,12 +28,15 @@ class CodeScreen extends StatelessWidget {
                   Text(
                     "Let's Play Quiz,",
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: Colors.white, fontWeight: FontWeight.bold),
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const Text("Enter the code"),
                   const Spacer(), // 1/6
-                  const TextField(
-                    decoration: InputDecoration(
+                  TextField(
+                    controller: quizCodeController,
+                    decoration: const InputDecoration(
                       filled: true,
                       fillColor: Color(0xFF1C2341),
                       hintText: "Quiz Code",
@@ -40,12 +47,15 @@ class CodeScreen extends StatelessWidget {
                   ),
                   const Spacer(), // 1/6
                   InkWell(
-                    onTap: () => Get.to(const UsernameScreen()),
+                    onTap: () {
+                      final quizCode = quizCodeController.text;
+                      QuizManager.setQuizCode(quizCode);
+                      Get.to(const UsernameScreen());
+                    },
                     child: Container(
                       width: double.infinity,
                       alignment: Alignment.center,
-                      padding:
-                          const EdgeInsets.all(kDefaultPadding * 0.75), // 15
+                      padding: const EdgeInsets.all(kDefaultPadding * 0.75),
                       decoration: const BoxDecoration(
                         gradient: kPrimaryGradient,
                         borderRadius: BorderRadius.all(Radius.circular(12)),
@@ -59,7 +69,7 @@ class CodeScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const Spacer(flex: 2), // it will take 2/6 spaces
+                  const Spacer(flex: 2),
                 ],
               ),
             ),

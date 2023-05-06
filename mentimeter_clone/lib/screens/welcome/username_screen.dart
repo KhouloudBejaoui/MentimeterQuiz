@@ -1,19 +1,43 @@
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mentimeter_clone/constants.dart';
 import 'package:mentimeter_clone/screens/quiz/quiz_screen.dart';
+import 'package:mentimeter_clone/screens/welcome/quiz_manager.dart';
 import 'package:websafe_svg/websafe_svg.dart';
 
-class UsernameScreen extends StatelessWidget {
+final databaseReference = FirebaseDatabase.instance.ref();
+
+class UsernameScreen extends StatefulWidget {
   const UsernameScreen({super.key});
+
+  @override
+  State<UsernameScreen> createState() => _UsernameScreenState();
+}
+
+class _UsernameScreenState extends State<UsernameScreen> {
+  void addUser(String name) {
+    databaseReference
+        .child("users")
+        .push()
+        .set({'name': name, 'score': 0}).then((value) {
+      print('User added successfully');
+    }).catchError((error) {
+      print('Failed to add user: $error');
+    });
+  }
+
+  static final _nameController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
-        fit: StackFit.expand,
         children: [
-          WebsafeSvg.asset("assets/icons/bg.svg", fit: BoxFit.fill),
+          WebsafeSvg.asset("assets/icons/bg.svg",
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: kDefaultPadding),
@@ -28,10 +52,11 @@ class UsernameScreen extends StatelessWidget {
                   ),
                   const Text("Enter your informations below"),
                   const Spacer(), // 1/6
-                  const TextField(
-                    decoration: InputDecoration(
+                  TextFormField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
                       filled: true,
-                      fillColor: Color(0xFF1C2341),
+                      fillColor: Color.fromARGB(255, 72, 67, 67),
                       hintText: "Full Name",
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(12)),
@@ -40,7 +65,12 @@ class UsernameScreen extends StatelessWidget {
                   ),
                   const Spacer(), // 1/6
                   InkWell(
-                    onTap: () => Get.to(const QuizScreen()),
+                    onTap: () {
+                      final username = _nameController.text;
+                      addUser(username);
+                      QuizManager.setUserName(username);
+                      Get.to(const QuizScreen());
+                    },
                     child: Container(
                       width: double.infinity,
                       alignment: Alignment.center,

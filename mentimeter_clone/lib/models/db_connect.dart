@@ -1,12 +1,19 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-
+import '../screens/welcome/quiz_manager.dart';
 import 'les_questions.dart';
 
 class DBconnect {
-  final url = Uri.parse(
-      "https://mentimeterclone-default-rtdb.firebaseio.com/questions/123.json");
+  late final String quizCode;
+  late final Uri url;
+
+  DBconnect() {
+    quizCode = QuizManager.getQuizCode();
+    url = Uri.parse(
+      "https://mentimeterclone-default-rtdb.firebaseio.com/questions/$quizCode.json",
+    );
+  }
 
   Future<List<Question>> fetchQuestions() async {
     return await http.get(url).then((response) {
